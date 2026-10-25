@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05070b">
+<meta name="description" content="Porto Pixel: um jogo de mundo aberto 8-bit leve para celular e tablet.">
+<title>PORTO PIXEL — Histórias de Boliche</title>
+<style>
+  :root{
+    --ink:#e9e7dc;--muted:#8f98a8;--yellow:#ffd23f;--pink:#ff4d9d;
+    --cyan:#45e0d0;--red:#ff5b5b;--green:#7dff9a;--panel:#0b0f17;--line:#27303f;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:#05070b;color:var(--ink);overflow:hidden}
+  body{
+    font-family:"Courier New",ui-monospace,monospace;-webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    background:radial-gradient(circle at 50% 20%,#0b1320 0,#05070b 55%,#030407 100%);
+    touch-action:none;
+  }
+  #app{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #game{
+    display:block;width:min(100vw,calc(100vh * 16 / 9));width:min(100vw,calc(100dvh * 16 / 9));
+    height:auto;aspect-ratio:16/9;max-height:100dvh;
+    image-rendering:pixelated;image-rendering:crisp-edges;background:#07090d;
+    box-shadow:0 0 0 1px rgba(255,255,255,.05),0 20px 80px rgba(0,0,0,.8);touch-action:none;
+  }
+  #app::before{
+    content:"";position:fixed;inset:0;z-index:11;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);
+    opacity:.32;mix-blend-mode:multiply;
+  }
+  #app::after{
+    content:"";position:fixed;inset:0;z-index:12;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 45%,transparent 48%,rgba(0,0,0,.55) 100%);
+  }
+  .hidden{display:none!important}
+  .screen{
+    position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+    padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right))
+            max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+    background:radial-gradient(ellipse at 50% 40%,rgba(8,12,20,.62),rgba(3,5,9,.94));
+    backdrop-filter:blur(2px);overflow:auto;touch-action:auto;
+  }
+  .panel{
+    width:min(760px,100%);max-height:100%;overflow:auto;
+    padding:clamp(16px,3.4vh,34px) clamp(18px,4vw,46px);
+    background:linear-gradient(180deg,rgba(13,18,28,.95),rgba(7,10,16,.97));
+    border:2px solid #33405a;position:relative;text-align:center;
+    box-shadow:0 0 0 2px #05070b,0 0 44px rgba(69,224,208,.10),inset 0 0 60px rgba(0,0,0,.35);
+  }
+  .panel::before,.panel::after{content:"";position:absolute;width:12px;height:12px;border:2px solid var(--pink);opacity:.9}
+  .panel::before{left:-2px;top:-2px;border-right:0;border-bottom:0}
+  .panel::after{right:-2px;bottom:-2px;border-left:0;border-top:0}
+  .badge{
+    display:inline-block;padding:5px 10px 4px;margin-bottom:12px;color:var(--cyan);
+    border:1px solid rgba(69,224,208,.4);font-size:clamp(8px,1.6vh,11px);
+    letter-spacing:.22em;font-weight:700;background:rgba(69,224,208,.06);
+  }
+  h1{
+    margin:0;line-height:.88;letter-spacing:-.04em;font-weight:900;
+    font-size:clamp(38px,10.5vh,84px);
+    text-shadow:4px 4px 0 #05070b,8px 8px 0 rgba(0,0,0,.55);
+  }
+  h1 .p1{color:var(--pink);text-shadow:3px 0 var(--cyan),6px 4px 0 rgba(0,0,0,.6)}
+  h1 .p2{color:var(--yellow);display:inline-block;text-shadow:3px 0 var(--pink),6px 4px 0 rgba(0,0,0,.6)}
+  .tagline{
+    margin-top:10px;color:var(--ink);letter-spacing:.34em;font-size:clamp(10px,2vh,14px);
+    font-weight:700;text-shadow:0 0 14px rgba(255,210,63,.35);
+  }
+  .story{margin:16px auto 0;max-width:560px;color:#aeb6c4;font-size:clamp(11px,1.9vh,14px);line-height:1.65}
+  .cta,.ghost{
+    font-family:inherit;font-weight:900;letter-spacing:.12em;cursor:pointer;
+    padding:14px 26px;margin-top:20px;font-size:clamp(13px,2.2vh,17px);
+    border:2px solid #05070b;transition:transform .08s,filter .15s;touch-action:manipulation;
+  }
+  .cta{background:var(--yellow);color:#111;box-shadow:5px 5px 0 #7c3a12,0 0 26px rgba(255,210,63,.18)}
+  .cta:hover{filter:brightness(1.08)}
+  .cta:active{transform:translate(3px,3px);box-shadow:2px 2px 0 #7c3a12}
+  .ghost{background:transparent;color:var(--ink);border:2px solid #39455c;box-shadow:4px 4px 0 rgba(0,0,0,.4)}
+  .ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+  .ghost:active{transform:translate(2px,2px)}
+  .controls{margin:20px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:660px;text-align:left}
+  .controls>div{
+    background:rgba(0,0,0,.32);border:1px solid #222c3d;padding:10px 12px;
+    display:flex;flex-direction:column;gap:5px;min-width:0;
+  }
+  .controls b{color:var(--cyan);font-size:10px;letter-spacing:.18em}
+  .controls span{color:#9aa4b4;font-size:clamp(10px,1.6vh,12px);line-height:1.5}
+  .foot{margin-top:16px;color:#5d6675;font-size:10px;line-height:1.6;letter-spacing:.04em}
+  h2{margin:6px 0 8px;font-size:clamp(28px,7vh,52px);letter-spacing:.06em}
+  .small{max-width:520px}
+  .btnrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+  .wasted{color:var(--red);text-shadow:4px 4px 0 #200,0 0 30px rgba(255,91,91,.35)}
+  .deadpanel{border-color:#6b2630;box-shadow:0 0 0 2px #05070b,0 0 60px rgba(255,91,91,.12)}
+  .deadpanel p{color:#b8a6a6;font-size:13px}
+  #touch{position:fixed;inset:0;z-index:20;pointer-events:none}
+  #stick{
+    position:absolute;left:max(20px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));
+    width:clamp(108px,15vh,148px);height:clamp(108px,15vh,148px);border-radius:50%;
+    pointer-events:auto;touch-action:none;
+    background:radial-gradient(circle,rgba(20,29,43,.52),rgba(8,12,18,.28) 70%);
+    border:2px solid rgba(196,214,235,.24);
+    box-shadow:inset 0 0 22px rgba(0,0,0,.45),0 0 0 5px rgba(5,8,12,.25);transition:border-color .12s;
+  }
+  #stick.active{border-color:rgba(69,224,208,.7);box-shadow:inset 0 0 24px rgba(69,224,208,.1),0 0 18px rgba(69,224,208,.14)}
+  #stick::before,#stick::after{content:"";position:absolute;background:rgba(255,255,255,.08);border-radius:1px}
+  #stick::before{left:50%;top:14%;bottom:14%;width:1px;transform:translateX(-.5px)}
+  #stick::after{top:50%;left:14%;right:14%;height:1px;transform:translateY(-.5px)}
+  #knob{
+    position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21% 0 0 -21%;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#66748b,#2a3444 64%,#151c27);
+    border:2px solid rgba(220,232,246,.35);
+    box-shadow:0 3px 10px rgba(0,0,0,.6),inset 0 0 8px rgba(255,255,255,.08);
+    will-change:transform;pointer-events:none;
+  }
+  #actions{
+    position:absolute;right:max(20px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));
+    display:flex;align-items:flex-end;gap:clamp(10px,2.4vw,18px);pointer-events:none;
+  }
+  .tbtn{
+    pointer-events:auto;touch-action:none;border-radius:50%;padding:0;font-family:inherit;color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;
+    background:radial-gradient(circle at 38% 30%,rgba(58,72,94,.85),rgba(17,23,33,.9) 68%);
+    border:2px solid rgba(196,214,235,.32);
+    box-shadow:0 5px 14px rgba(0,0,0,.5),inset 0 0 12px rgba(255,255,255,.04);
+    transition:transform .07s,filter .12s,border-color .12s;
+  }
+  .tbtn b{font-size:clamp(20px,3.2vh,28px);line-height:1;font-weight:900;letter-spacing:.02em}
+  .tbtn span{font-size:clamp(6px,1vh,8px);letter-spacing:.08em;color:#b7c3d4;max-width:100%;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #btnA{width:clamp(74px,11vh,102px);height:clamp(74px,11vh,102px);background:radial-gradient(circle at 38% 30%,rgba(255,210,63,.9),rgba(126,82,10,.92) 72%);border-color:rgba(255,224,120,.7);color:#151006}
+  #btnA span{color:#322307}
+  #btnB{width:clamp(56px,8.2vh,76px);height:clamp(56px,8.2vh,76px)}
+  .tbtn.down{transform:scale(.92);filter:brightness(1.22)}
+  .tbtn:hover{border-color:rgba(69,224,208,.7)}
+  #topbar{position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:6px}
+  .topbtn{
+    font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.14em;color:#c6d0df;cursor:pointer;
+    background:rgba(8,12,19,.7);border:1px solid #2b374a;padding:6px 10px;touch-action:manipulation;
+  }
+  .topbtn:hover{border-color:var(--cyan);color:var(--cyan)}
+  .topbtn.off{color:#6f7785;border-color:#2a303b}
+  #rotate{
+    position:fixed;left:50%;bottom:max(168px,22vh);transform:translateX(-50%);z-index:21;
+    padding:7px 12px;background:rgba(6,9,14,.82);border:1px solid #2c394d;
+    color:#9fb0c6;font-size:9px;letter-spacing:.12em;display:none;pointer-events:none;white-space:nowrap;
+  }
+  @media (max-height:560px){
+    .story{display:none}.controls{margin-top:12px;gap:7px}.panel{padding:12px 20px}
+    .badge{margin-bottom:8px}.cta{padding:10px 20px;margin-top:12px}.foot{margin-top:10px}
+    h1{font-size:clamp(34px,12vh,64px)}
+  }
+  @media (max-height:400px){.controls{display:none}.tagline{margin-top:6px}}
+  @media (orientation:portrait) and (max-width:640px){
+    #rotate{display:block}.controls{grid-template-columns:1fr}.story{font-size:11px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game" width="480" height="270" aria-label="Porto Pixel"></canvas>
+</div>
+
+<div id="touch" class="hidden">
+  <div id="stick" aria-label="Direcional"><div id="knob"></div></div>
+  <div id="actions">
+    <button id="btnB" class="tbtn" type="button"><b>B</b><span id="lblB">CORRER</span></button>
+    <button id="btnA" class="tbtn" type="button"><b>A</b><span id="lblA">AÇÃO</span></button>
+  </div>
+</div>
+
+<div id="topbar" class="hidden">
+  <button id="pauseBtn" class="topbtn" type="button">PAUSA</button>
+  <button id="sndBtn" class="topbtn" type="button">SOM</button>
+</div>
+<div id="rotate">GIRE O CELULAR PARA UMA TELA MAIOR</div>
+
+<div id="menu" class="screen">
+  <div class="panel">
+    <div class="badge">8-BIT · MUNDO ABERTO · TOQUE</div>
+    <h1><span class="p1">PORTO</span> <span class="p2">PIXEL</span></h1>
+    <div class="tagline">HISTÓRIAS DE BOLICHE</div>
+    <p class="story">Vito desembarca em Porto Pixel para recomeçar. O primo Rui só pensa em boliche.<br>A cidade tem outros planos.</p>
+    <button id="playBtn" class="cta" type="button">JOGAR AGORA</button>
+    <div class="controls">
+      <div><b>TOQUE</b><span>Direcional: andar / dirigir<br>A: entrar, falar ou atirar<br>B: correr ou frear</span></div>
+      <div><b>TECLADO</b><span>WASD / setas: mover<br>E: entrar, sair e falar<br>J: atirar · Shift: correr / frear</span></div>
+    </div>
+    <div class="foot">Fan game original. Sem afiliação com Rockstar Games.<br>Dica: siga os ícones R, B e J. A cidade paga bem.</div>
+  </div>
+</div>
+
+<div id="pause" class="screen hidden">
+  <div class="panel small">
+    <div class="badge">JOGO PAUSADO</div>
+    <h2>PAUSA</h2>
+    <div class="btnrow">
+      <button id="resumeBtn" class="cta" type="button">CONTINUAR</button>
+      <button id="restartBtn" class="ghost" type="button">REINICIAR</button>
+    </div>
+    <div class="foot">ESC ou P retoma · M liga/desliga o som</div>
+  </div>
+</div>
+
+<div id="dead" class="screen hidden">
+  <div class="panel small deadpanel">
+    <div class="badge" style="color:#ff9a9a;border-color:rgba(255,91,91,.45);background:rgba(255,91,91,.07)">A CIDADE NÃO PERDOA</div>
+    <h2 class="wasted">WASTED</h2>
+    <p>Você perdeu $100 e acordou no hospital.</p>
+    <button id="respawnBtn" class="cta" type="button">ACORDAR NO HOSPITAL</button>
+    <div class="foot">Dica: o Pay'n'Spray limpa a ficha por $100.</div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
